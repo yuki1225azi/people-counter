@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>リアルタイム人数カウンター</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- TensorFlow.js関連ライブラリ -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+</head>
+<body>
+    <div id="container">
+        <div id="status-indicator">
+            <div id="loading-model">モデル読込中...</div>
+            <div id="analyzing-text" class="hidden">解析中...</div>
+        </div>
+
+        <div id="video-container">
+            <video id="video" playsinline muted autoplay hidden></video>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div id="count-display-area">
+            <p>現在の人数: <span id="person-count">0</span>人</p>
+        </div>
+
+        <div id="controls">
+            <button id="toggle-analysis-btn" class="btn start" disabled>開始</button>
+            <button id="export-csv-btn" class="btn" disabled>CSV出力</button>
+        </div>
+    </div>
+
+    <div id="toast" class="hidden">CSVファイルを出力しました。</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
