@@ -33,7 +33,13 @@ async function initialize() {
 
 async function setupCamera() {
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { ideal: "environment" }  // 外カメラを優先、なければ内カメラ
+            },
+            audio: false
+        });
+
         video.srcObject = stream;
         video.muted = true;
         video.playsInline = true;
@@ -74,7 +80,7 @@ function startAnalysis() {
     canvas.classList.add('analyzing');
     analyzingIndicator.classList.remove('hidden');
 
-    detectFrame(); // 60fpsモード復活
+    detectFrame(); // 60fps解析
 }
 
 function stopAnalysis() {
@@ -111,7 +117,7 @@ async function detectFrame() {
     const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${String(now.getHours()).padStart(2, '0')}/${String(now.getMinutes()).padStart(2, '0')}/${String(now.getSeconds()).padStart(2, '0')}`;
     recordedData.push({ timestamp, count: personCount });
 
-    animationFrameId = requestAnimationFrame(detectFrame); // ← 60fps検出継続
+    animationFrameId = requestAnimationFrame(detectFrame);
 }
 
 function exportCSV() {
@@ -120,7 +126,7 @@ function exportCSV() {
         return;
     }
 
-    // BOM付きでエンコード（Excelで文字化け防止）
+    // BOM付き（Excel用）で出力
     let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
     csvContent += "日時,人数\n";
     recordedData.forEach(row => {
