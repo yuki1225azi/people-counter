@@ -133,3 +133,9 @@ body {
 .hidden {
     display: none;
 }
+
+/* ✅ 追加：CSV出力ボタンだけ緑に */
+#export-csv-btn {
+    background-color: #4caf50;
+    color: white;
+}
