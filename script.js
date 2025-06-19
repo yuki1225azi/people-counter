@@ -1,158 +1,176 @@
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const personCountSpan = document.getElementById('person-count');
-const toggleBtn = document.getElementById('toggle-analysis-btn');
-const exportBtn = document.getElementById('export-csv-btn');
-const loadingIndicator = document.getElementById('loading-model');
-const analyzingIndicator = document.getElementById('analyzing-text');
-const toast = document.getElementById('toast');
-
-let model = null;
-let isAnalyzing = false;
-let animationFrameId = null;
-let recordedData = [];
-
-async function initialize() {
-    try {
-        await tf.setBackend('webgl');
-        await tf.ready();
-        console.log("TensorFlow.js backend is ready.");
-
-        model = await cocoSsd.load();
-        console.log("Model loaded.");
-        loadingIndicator.classList.add('hidden');
-
-        await setupCamera();
-    } catch (error) {
-        console.error("Initialization failed:", error);
-        alert(`初期化に失敗しました: ${error.message}\nページを再読み込みしてください。`);
-        loadingIndicator.innerText = "初期化エラー";
-    }
+:root {
+  --start-color: #e53935;
+  --stop-color: #1e88e5;
+  --disabled-color: #bdbdbd;
+  --border-color-analyzing: #e53935;
+  --border-color-default: #ccc;
+  --font-color: #333;
+  --bg-color: #f5f5f5;
+  --link-blue: #1e88e5;
 }
 
-async function setupCamera() {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: { ideal: "environment" }  // 外カメラを優先、なければ内カメラ
-            },
-            audio: false
-        });
-
-        video.srcObject = stream;
-        video.muted = true;
-        video.playsInline = true;
-        video.autoplay = true;
-
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play().catch(error => console.error("Video play failed:", error));
-                video.hidden = true;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                toggleBtn.disabled = false;
-                exportBtn.disabled = false;
-                console.log("Camera setup complete.");
-                resolve();
-            };
-        });
-    } catch (error) {
-        console.error("Camera access error:", error);
-        alert('カメラへのアクセスが許可されませんでした。ブラウザの設定を確認し、カメラの使用を許可してください。');
-        loadingIndicator.innerText = "カメラアクセス不可";
-    }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--font-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }
 
-function toggleAnalysis() {
-    isAnalyzing = !isAnalyzing;
-    if (isAnalyzing) {
-        startAnalysis();
-    } else {
-        stopAnalysis();
-    }
+#container {
+  width: 100%;
+  max-width: 500px;
+  padding: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-function startAnalysis() {
-    toggleBtn.textContent = '停止';
-    toggleBtn.classList.remove('start');
-    toggleBtn.classList.add('stop');
-    canvas.classList.add('analyzing');
-    analyzingIndicator.classList.remove('hidden');
-
-    detectFrame(); // 60fps解析
+#status-indicator {
+  text-align: center;
+  font-size: 1em;
+  font-weight: bold;
 }
 
-function stopAnalysis() {
-    toggleBtn.textContent = '開始';
-    toggleBtn.classList.remove('stop');
-    toggleBtn.classList.add('start');
-    canvas.classList.remove('analyzing');
-    analyzingIndicator.classList.add('hidden');
-
-    cancelAnimationFrame(animationFrameId);
+#video-container {
+  position: relative;
+  width: 100%;
+  background: #000;
 }
 
-async function detectFrame() {
-    if (!isAnalyzing || video.paused || video.ended) return;
-
-    const predictions = await model.detect(video);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    let personCount = 0;
-    predictions.forEach(prediction => {
-        if (prediction.class === 'person') {
-            personCount++;
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.rect(...prediction.bbox);
-            ctx.stroke();
-        }
-    });
-
-    personCountSpan.textContent = personCount;
-
-    const now = new Date();
-    const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${String(now.getHours()).padStart(2, '0')}/${String(now.getMinutes()).padStart(2, '0')}/${String(now.getSeconds()).padStart(2, '0')}`;
-    recordedData.push({ timestamp, count: personCount });
-
-    animationFrameId = requestAnimationFrame(detectFrame);
+#video {
+  display: none;
 }
 
-function exportCSV() {
-    if (recordedData.length === 0) {
-        alert('出力するデータがありません。先に解析を開始してください。');
-        return;
-    }
-
-    // BOM付き（Excel用）で出力
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "日時,人数\n";
-    recordedData.forEach(row => {
-        csvContent += `${row.timestamp},${row.count}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const fileName = `count_log_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    recordedData = [];
-    showToast();
+#canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 3px solid var(--border-color-default);
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
 }
 
-function showToast() {
-    toast.classList.remove('hidden');
-    setTimeout(() => {
-        toast.classList.add('hidden');
-    }, 3000);
+#canvas.analyzing {
+  border-color: var(--border-color-analyzing);
 }
 
-toggleBtn.addEventListener('click', toggleAnalysis);
-exportBtn.addEventListener('click', exportCSV);
-window.addEventListener('load', initialize);
+#count-display-area {
+  text-align: center;
+}
+
+#count-display-area p {
+  margin: 0;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+#person-count {
+  font-size: 1.8em;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  flex: 1 1 30%;
+  min-width: 120px;
+  max-width: 120px;
+  text-align: center;
+  padding: 12px 20px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.1s;
+  -webkit-appearance: none;
+}
+
+.btn:disabled {
+  background-color: var(--disabled-color);
+  cursor: not-allowed;
+}
+
+.btn.start {
+  background-color: var(--start-color);
+}
+
+.btn.stop {
+  background-color: var(--stop-color);
+}
+
+#toggle-log-btn {
+  background-color: var(--link-blue);
+  color: white;
+}
+
+#export-csv-btn {
+  background-color: #4caf50;
+  color: white;
+}
+
+#log-display {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 0.9em;
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+#log-display.hidden {
+  display: none;
+}
+
+#log-display h3 {
+  margin-top: 0;
+  font-size: 1.1em;
+  text-align: center;
+}
+
+#log-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#log-table th,
+#log-table td {
+  border: 1px solid #ddd;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+#toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.5s, bottom 0.5s;
+}
+
+#toast:not(.hidden) {
+  opacity: 1;
+  bottom: 50px;
+}
+
+.hidden {
+  display: none;
+}
