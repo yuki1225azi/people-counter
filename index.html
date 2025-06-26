@@ -4,11 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>リアルタイム人数カウンター</title>
-
-  <!-- CSS -->
-  <link rel="stylesheet" href="style.css">
-
-  <!-- TensorFlow.jsライブラリ -->
+  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
@@ -20,22 +16,18 @@
       <div id="loading-model">モデル読込中...</div>
       <div id="analyzing-text" class="hidden">解析中...</div>
     </div>
-
     <div id="video-container">
-      <video id="video" playsinline muted autoplay hidden></video>
+      <video id="video" playsinline muted autoplay></video>
       <canvas id="canvas"></canvas>
     </div>
-
     <div id="count-display-area">
       <p>現在の人数: <span id="person-count">0</span>人</p>
     </div>
-
     <div id="controls">
       <button id="toggle-analysis-btn" class="btn start" disabled>開始</button>
       <button id="toggle-log-btn" class="btn">詳細</button>
       <button id="export-csv-btn" class="btn" disabled>CSV出力</button>
     </div>
-
     <div id="log-display" class="hidden">
       <h3>ログ表示</h3>
       <table id="log-table">
@@ -43,10 +35,8 @@
         <tbody id="log-body"></tbody>
       </table>
     </div>
-
     <div id="toast" class="hidden">CSVファイルを出力しました。</div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
