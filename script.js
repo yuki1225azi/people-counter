@@ -15,6 +15,7 @@ let model = null;
 let isAnalyzing = false;
 let animationFrameId = null;
 let recordedData = [];
+let lastLogTime = 0;
 
 async function initialize() {
   try {
@@ -23,6 +24,7 @@ async function initialize() {
     model = await cocoSsd.load();
     loadingIndicator.classList.add("hidden");
     await setupCamera();
+    drawVideoToCanvas();
   } catch (error) {
     alert(`初期化に失敗しました: ${error.message}`);
     loadingIndicator.innerText = "初期化エラー";
@@ -39,7 +41,6 @@ async function setupCamera() {
     return new Promise((resolve) => {
       video.onloadedmetadata = () => {
         video.play();
-        video.hidden = true;
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         toggleBtn.disabled = false;
@@ -50,6 +51,13 @@ async function setupCamera() {
   } catch (error) {
     alert("カメラへのアクセスが許可されませんでした。");
     loadingIndicator.innerText = "カメラアクセス不可";
+  }
+}
+
+function drawVideoToCanvas() {
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (!isAnalyzing) {
+    requestAnimationFrame(drawVideoToCanvas);
   }
 }
 
@@ -75,6 +83,7 @@ function stopAnalysis() {
   canvas.classList.remove("analyzing");
   analyzingIndicator.classList.add("hidden");
   cancelAnimationFrame(animationFrameId);
+  drawVideoToCanvas(); // 映像描画は継続
 }
 
 async function detectFrame() {
@@ -95,8 +104,11 @@ async function detectFrame() {
   personCountSpan.textContent = personCount;
   const now = new Date();
   const timestamp = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-  recordedData.push({ timestamp, count: personCount });
-  updateLogDisplay();
+  if (now - lastLogTime >= 1000) {
+    recordedData.push({ timestamp, count: personCount });
+    updateLogDisplay();
+    lastLogTime = now;
+  }
   animationFrameId = requestAnimationFrame(detectFrame);
 }
 
@@ -115,20 +127,25 @@ function exportCSV() {
     alert("出力するデータがありません。");
     return;
   }
-  let csvContent = "data:text/csv;charset=utf-8,\uFEFF日時,人数\n";
-  recordedData.forEach(row => {
-    csvContent += `${row.timestamp},${row.count}\n`;
-  });
-  const encodedUri = encodeURI(csvContent);
+
+  const header = "日時,人数\n";
+  const rows = recordedData.map(row => `"${row.timestamp}",${row.count}`);
+  const csvContent = header + rows.join("\n");
+
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
+  link.setAttribute("href", url);
   link.setAttribute("download", `count_log_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
   recordedData = [];
   showToast();
 }
+
 
 function showToast() {
   toast.classList.remove("hidden");
