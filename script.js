@@ -68,7 +68,7 @@ function toggleAnalysis() {
 }
 
 function startAnalysis() {
-  toggleBtn.textContent = "停止";
+  toggleBtn.textContent = "終了";
   toggleBtn.classList.remove("start");
   toggleBtn.classList.add("stop");
   canvas.classList.add("analyzing");
