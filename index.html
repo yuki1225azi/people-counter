@@ -1,42 +1,49 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>リアルタイム人数カウンター</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>スマート人数カウンター</title>
+
+<!-- TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+
+<!-- CSS -->
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="container">
-    <div id="status-indicator">
-      <div id="loading-model">モデル読込中...</div>
-      <div id="analyzing-text" class="hidden">解析中...</div>
-    </div>
-    <div id="video-container">
-      <video id="video" playsinline muted autoplay></video>
-      <canvas id="canvas"></canvas>
+<div id="container">
+  <div id="app-title">スマート人数カウンター</div>
+  <div id="status-indicator">
+    <div id="loading-model">AIモデル読込中... <span id="loading-percentage">0%</span></div>
+    <progress id="loading-progress" max="100" value="0"></progress>
+  </div>
+  <div id="video-container">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+  </div>
+  <div id="main-controls-area">
+    <div id="controls">
+      <button class="btn btn-green" disabled id="toggle-analysis-btn">測定開始</button>
     </div>
     <div id="count-display-area">
       <p>現在の人数: <span id="person-count">0</span>人</p>
     </div>
-    <div id="controls">
-      <button id="toggle-analysis-btn" class="btn start" disabled>開始</button>
-      <button id="toggle-log-btn" class="btn">詳細</button>
-      <button id="export-csv-btn" class="btn" disabled>CSV出力</button>
-    </div>
-    <div id="log-display" class="hidden">
-      <h3>ログ表示</h3>
-      <table id="log-table">
-        <thead><tr><th>日時</th><th>人数</th></tr></thead>
-        <tbody id="log-body"></tbody>
-      </table>
-    </div>
-    <div id="toast" class="hidden">CSVファイルを出力しました。</div>
   </div>
-  <script src="script.js"></script>
+  <div id="log-display">
+    <table id="log-table">
+      <thead><tr><th>日時</th><th>人数</th></tr></thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>
+  <div id="toast" class="hidden"></div>
+</div>
+
+<!-- JavaScript -->
+<script src="script.js" defer></script>
 </body>
 </html>
