@@ -1,6 +1,6 @@
 :root {
-  --start-color: #e53935;
-  --stop-color: #1e88e5;
+  --start-color: #4CAF50;
+  --stop-color: #e53935;
   --disabled-color: #bdbdbd;
   --border-color-analyzing: #e53935;
   --border-color-default: #ccc;
@@ -11,13 +11,14 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: var(--bg-color);
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  background-color: #ffffff;
   color: var(--font-color);
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 #container {
@@ -28,26 +29,50 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+#app-title {
+  text-align: center;
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #2c3e50;
 }
 
 #status-indicator {
   text-align: center;
-  font-size: 1em;
+  font-size: 0.9em;
   font-weight: bold;
+}
+
+#loading-model {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.1em;
+  font-weight: bold;
+  color: #0056b3;
+}
+
+#loading-progress {
+  width: 80%;
+  height: 20px;
 }
 
 #video-container {
   position: relative;
   width: 100%;
   background: #000;
+  border-radius: 8px;
+  overflow: hidden;
 }
-
 #video {
   display: block;
   width: 100%;
   height: auto;
 }
-
 #canvas {
   display: block;
   width: 100%;
@@ -58,101 +83,91 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  border-radius: 8px;
 }
-
 #canvas.analyzing {
   border-color: var(--border-color-analyzing);
 }
 
-#count-display-area {
-  text-align: center;
-}
-
-#count-display-area p {
-  margin: 0;
-  font-size: 1.5em;
-  font-weight: bold;
-}
-
-#person-count {
-  font-size: 1.8em;
-}
-
-#controls {
+#main-controls-area {
   display: flex;
+  flex-direction: row;
   justify-content: center;
+  align-items: center;
   gap: 16px;
   flex-wrap: wrap;
 }
+#count-display-area {
+  text-align: center;
+}
+#count-display-area p {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0;
+}
+#person-count {
+  font-size: 2em;
+}
 
 .btn {
-  flex: 1 1 30%;
-  min-width: 120px;
-  max-width: 120px;
+  flex: 0 0 auto;
+  white-space: nowrap;
   text-align: center;
-  padding: 12px 20px;
-  font-size: 1.1em;
+  padding: 10px 18px;
+  font-size: 1em;
   font-weight: bold;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.1s;
+  transition: background-color 0.3s, transform 0.1s, box-shadow 0.2s;
 }
-
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(1px);
+}
 .btn:disabled {
   background-color: var(--disabled-color);
   cursor: not-allowed;
 }
-
-.btn.start {
+.btn-green {
   background-color: var(--start-color);
 }
-
-.btn.stop {
+.btn-red {
   background-color: var(--stop-color);
 }
 
-#toggle-log-btn {
-  background-color: var(--link-blue);
-  color: white;
-}
-
-#export-csv-btn {
-  background-color: #4caf50;
-  color: white;
-}
-
-#log-display {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  padding: 10px;
-  font-size: 0.9em;
-  max-height: 200px;
-  overflow-y: auto;
-  border-radius: 8px;
-}
-
-#log-display.hidden {
-  display: none;
-}
-
 #log-display h3 {
-  margin-top: 0;
-  font-size: 1.1em;
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0;
   text-align: center;
+  background-color: #e0e0e0; /* ←灰色背景 */
+  padding: 6px; /* 文字に余白をつける */
+  border-radius: 4px; /* 角を少し丸く */
 }
+
+
 
 #log-table {
   width: 100%;
   border-collapse: collapse;
 }
-
 #log-table th,
 #log-table td {
   border: 1px solid #ddd;
   padding: 4px 6px;
   text-align: center;
+}
+#log-table tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+#log-table tbody tr:nth-child(even) {
+  background-color: #ffffff;
 }
 
 #toast {
@@ -160,7 +175,7 @@ body {
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0,0,0,0.7);
   color: white;
   padding: 10px 20px;
   border-radius: 20px;
@@ -169,12 +184,10 @@ body {
   opacity: 0;
   transition: opacity 0.5s, bottom 0.5s;
 }
-
 #toast:not(.hidden) {
   opacity: 1;
   bottom: 50px;
 }
-
 .hidden {
   display: none;
 }
