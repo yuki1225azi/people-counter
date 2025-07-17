@@ -219,29 +219,26 @@ async function exportCSV(dataToExport, sessionStartTime) {
   const header = "日時,人数\n";
   const rows = dataToExport.map(row => `"${row.timestamp}",${row.count}`);
   const csvContent = header + rows.join("\n");
-  const now = sessionStartTime;
-  const fileName = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}_people_counter.csv`;
 
-  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
-  // スマホ対応: Safariや一部Androidは a.download が効かない
-  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if (isMobile) {
-    const newTab = window.open();
-    newTab.document.write(`<pre>${csvContent}</pre>`);
-    showToast("CSVを新しいタブで開きました。長押し→共有や保存してください。");
-  } else {
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    showToast(`CSVファイル「${fileName}」を出力しました。`);
-  }
+  const now = sessionStartTime;
+  const formattedDate = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+  const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+  const fileName = `${formattedDate}_${formattedTime}_people_counter.csv`;
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  showToast(`CSVファイル「${fileName}」を出力しました。`);
 }
+
 
 
 function showToast(message, isError = false) {
