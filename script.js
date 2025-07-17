@@ -231,13 +231,15 @@ async function exportCSV(dataToExport, sessionStartTime) {
 
   link.href = url;
   link.download = fileName;
+  link.style.display = "none"; // ユーザーに見せない
   document.body.appendChild(link);
-  link.click();
+  link.click(); // 自動クリックで即ダウンロード
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 
   showToast(`CSVファイル「${fileName}」を出力しました。`);
 }
+
 
 
 
