@@ -219,18 +219,20 @@ async function exportCSV(dataToExport, sessionStartTime) {
   const header = "日時,人数\n";
   const rows = dataToExport.map(row => `"${row.timestamp}",${row.count}`);
   const csvContent = header + rows.join("\n");
-  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const now = sessionStartTime;
+  const fileName = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}_people_counter.csv`;
 
-  // スマホ対応: Safariや一部のブラウザ用に window.open()
-  if (navigator.userAgent.match(/iPhone|iPad|Android/i)) {
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
-    showToast("CSVを新しいタブで開きました。保存してください。");
+  const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  // スマホ対応: Safariや一部Androidは a.download が効かない
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    const newTab = window.open();
+    newTab.document.write(`<pre>${csvContent}</pre>`);
+    showToast("CSVを新しいタブで開きました。長押し→共有や保存してください。");
   } else {
-    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const now = sessionStartTime;
-    const fileName = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}_people_counter.csv`;
     link.href = url;
     link.setAttribute("download", fileName);
     document.body.appendChild(link);
