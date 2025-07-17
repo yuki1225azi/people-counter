@@ -1,63 +1,103 @@
-const video = document.getElementById("video");
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const personCountSpan = document.getElementById("person-count");
-const toggleBtn = document.getElementById("toggle-analysis-btn");
-const exportBtn = document.getElementById("export-csv-btn");
-const toggleLogBtn = document.getElementById("toggle-log-btn");
-const loadingIndicator = document.getElementById("loading-model");
-const analyzingIndicator = document.getElementById("analyzing-text");
-const toast = document.getElementById("toast");
-const logBody = document.getElementById("log-body");
-const logDisplay = document.getElementById("log-display");
+// DOM要素取得
+const DOM = {
+  video: document.getElementById("video"),
+  canvas: document.getElementById("canvas"),
+  ctx: document.getElementById("canvas").getContext("2d"),
+  personCountSpan: document.getElementById("person-count"),
+  toggleBtn: document.getElementById("toggle-analysis-btn"),
+  loadingIndicator: document.getElementById("loading-model"),
+  loadingPercentage: document.getElementById("loading-percentage"),
+  loadingProgressBar: document.getElementById("loading-progress"),
+  toast: document.getElementById("toast"),
+  logBody: document.getElementById("log-body"),
+  logDisplay: document.getElementById("log-display"),
+  videoContainer: document.getElementById("video-container")
+};
 
+// 状態管理
 let model = null;
 let isAnalyzing = false;
 let animationFrameId = null;
 let recordedData = [];
 let lastLogTime = 0;
+let autoSaveIntervalId = null;
+let analysisStartTime = null;
 
-async function initialize() {
+// 初期化
+async function initializeApp() {
   try {
-    await tf.setBackend("webgl");
+    DOM.loadingIndicator.classList.remove("hidden");
+    DOM.loadingProgressBar.classList.remove("hidden");
+    DOM.loadingPercentage.textContent = "0%";
+    DOM.loadingProgressBar.value = 0;
+
     await tf.ready();
+
+    // 擬似進捗バー
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 5;
+      if (progress <= 90) {
+        DOM.loadingPercentage.textContent = `${progress}%`;
+        DOM.loadingProgressBar.value = progress;
+      } else {
+        clearInterval(progressInterval);
+      }
+    }, 100);
+
     model = await cocoSsd.load();
-    loadingIndicator.classList.add("hidden");
+
+    clearInterval(progressInterval);
+    DOM.loadingPercentage.textContent = "100%";
+    DOM.loadingProgressBar.value = 100;
+    document.getElementById("status-indicator").classList.add("hidden");
+
     await setupCamera();
+    setupEventListeners();
+    adjustCanvasSize();
     drawVideoToCanvas();
+    DOM.logDisplay.classList.remove("hidden");
+    DOM.personCountSpan.textContent = "0";
   } catch (error) {
+    console.error("初期化に失敗しました:", error);
     alert(`初期化に失敗しました: ${error.message}`);
-    loadingIndicator.innerText = "初期化エラー";
+    DOM.loadingIndicator.innerText = "初期化エラー";
+    DOM.loadingProgressBar.classList.add("hidden");
   }
 }
 
 async function setupCamera() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" } },
-      audio: false
-    });
-    video.srcObject = stream;
-    return new Promise((resolve) => {
-      video.onloadedmetadata = () => {
-        video.play();
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        toggleBtn.disabled = false;
-        exportBtn.disabled = false;
-        resolve();
-      };
-    });
-  } catch (error) {
-    alert("カメラへのアクセスが許可されませんでした。");
-    loadingIndicator.innerText = "カメラアクセス不可";
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" } },
+    audio: false
+  });
+  DOM.video.srcObject = stream;
+  return new Promise(resolve => {
+    DOM.video.onloadedmetadata = () => {
+      DOM.video.play();
+      adjustCanvasSize();
+      DOM.toggleBtn.disabled = false;
+      resolve();
+    };
+  });
+}
+
+function adjustCanvasSize() {
+  DOM.canvas.width = DOM.video.videoWidth;
+  DOM.canvas.height = DOM.video.videoHeight;
+  DOM.canvas.style.width = `${DOM.video.offsetWidth}px`;
+  DOM.canvas.style.height = `${DOM.video.offsetHeight}px`;
+  DOM.videoContainer.style.height = `${DOM.video.offsetHeight}px`;
+
+  if (!isAnalyzing) {
+    requestAnimationFrame(drawVideoToCanvas);
   }
 }
 
 function drawVideoToCanvas() {
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  DOM.ctx.drawImage(DOM.video, 0, 0, DOM.canvas.width, DOM.canvas.height);
   if (!isAnalyzing) {
-    requestAnimationFrame(drawVideoToCanvas);
+    animationFrameId = requestAnimationFrame(drawVideoToCanvas);
   }
 }
 
@@ -68,42 +108,73 @@ function toggleAnalysis() {
 }
 
 function startAnalysis() {
-  toggleBtn.textContent = "終了";
-  toggleBtn.classList.remove("start");
-  toggleBtn.classList.add("stop");
-  canvas.classList.add("analyzing");
-  analyzingIndicator.classList.remove("hidden");
+  DOM.toggleBtn.textContent = "測定終了";
+  DOM.toggleBtn.classList.remove("btn-green");
+  DOM.toggleBtn.classList.add("btn-red");
+  DOM.canvas.classList.add("analyzing");
+
+  recordedData = [];
+  analysisStartTime = new Date();
+  startAutoSaveInterval();
   detectFrame();
 }
 
-function stopAnalysis() {
-  toggleBtn.textContent = "開始";
-  toggleBtn.classList.remove("stop");
-  toggleBtn.classList.add("start");
-  canvas.classList.remove("analyzing");
-  analyzingIndicator.classList.add("hidden");
+async function stopAnalysis() {
+  DOM.toggleBtn.textContent = "測定開始";
+  DOM.toggleBtn.classList.remove("btn-red");
+  DOM.toggleBtn.classList.add("btn-green");
+  DOM.canvas.classList.remove("analyzing");
   cancelAnimationFrame(animationFrameId);
-  drawVideoToCanvas(); // 映像描画は継続
+  stopAutoSaveInterval();
+
+  if (recordedData.length > 0) {
+    await exportCSV(recordedData, analysisStartTime);
+    recordedData = [];
+  }
+  DOM.personCountSpan.textContent = "0";
+  drawVideoToCanvas();
+}
+
+function startAutoSaveInterval() {
+  if (autoSaveIntervalId) clearInterval(autoSaveIntervalId);
+  autoSaveIntervalId = setInterval(async () => {
+    if (recordedData.length > 0) {
+      await exportCSV(recordedData, analysisStartTime);
+      recordedData = [];
+      analysisStartTime = new Date();
+    }
+  }, 60 * 60 * 1000);
+}
+
+function stopAutoSaveInterval() {
+  if (autoSaveIntervalId) {
+    clearInterval(autoSaveIntervalId);
+    autoSaveIntervalId = null;
+  }
 }
 
 async function detectFrame() {
-  if (!isAnalyzing || video.paused || video.ended) return;
-  const predictions = await model.detect(video);
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (!isAnalyzing || DOM.video.paused || DOM.video.ended) return;
+
+  adjustCanvasSize();
+  const predictions = await model.detect(DOM.video);
+  DOM.ctx.drawImage(DOM.video, 0, 0, DOM.canvas.width, DOM.canvas.height);
+
   let personCount = 0;
-  predictions.forEach(prediction => {
-    if (prediction.class === "person") {
+  predictions.forEach(pred => {
+    if (pred.class === "person") {
       personCount++;
-      ctx.strokeStyle = "red";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.rect(...prediction.bbox);
-      ctx.stroke();
+      DOM.ctx.strokeStyle = "red";
+      DOM.ctx.lineWidth = 2;
+      DOM.ctx.strokeRect(...pred.bbox);
     }
   });
-  personCountSpan.textContent = personCount;
+
+  DOM.personCountSpan.textContent = personCount;
+
   const now = new Date();
-  const timestamp = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+  const timestamp = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,"0")}/${String(now.getDate()).padStart(2,"0")} ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+
   if (now - lastLogTime >= 1000) {
     recordedData.push({ timestamp, count: personCount });
     updateLogDisplay();
@@ -113,50 +184,74 @@ async function detectFrame() {
 }
 
 function updateLogDisplay() {
-  logBody.innerHTML = "";
-  const latestLogs = recordedData.slice(-20).reverse();
-  latestLogs.forEach(log => {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${log.timestamp}</td><td>${log.count}</td>`;
-    logBody.appendChild(row);
-  });
-}
-
-function exportCSV() {
+  DOM.logBody.innerHTML = "";
   if (recordedData.length === 0) {
-    alert("出力するデータがありません。");
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = 2;
+    cell.textContent = "ログはありません";
+    cell.style.textAlign = "center";
+    cell.style.color = "#888";
+    cell.style.padding = "10px";
+    row.appendChild(cell);
+    DOM.logBody.appendChild(row);
     return;
   }
+  for (let i = recordedData.length - 1; i >= 0; i--) {
+    const log = recordedData[i];
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${log.timestamp}</td><td>${log.count}</td>`;
+    DOM.logBody.appendChild(row);
+  }
+  DOM.logBody.scrollTop = 0;
+}
 
+async function exportCSV(dataToExport, sessionStartTime) {
+  if (dataToExport.length === 0) {
+    showToast("出力するデータがありません。", true);
+    return;
+  }
   const header = "日時,人数\n";
-  const rows = recordedData.map(row => `"${row.timestamp}",${row.count}`);
+  const rows = dataToExport.map(row => `"${row.timestamp}",${row.count}`);
   const csvContent = header + rows.join("\n");
-
   const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `count_log_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`);
+
+  const now = sessionStartTime;
+  const formattedDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+  const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
+  const fileName = `${formattedDate}_${formattedTime}_people_counter.csv`;
+
+  link.setAttribute("download", fileName);
+  link.href = url;
   document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 
-  recordedData = [];
-  showToast();
+  try {
+    link.click();
+    showToast(`CSVファイル「${fileName}」を出力しました。`);
+  } catch (error) {
+    showToast("CSVファイルのダウンロードに失敗しました。", true);
+    console.error("CSV download failed:", error);
+  } finally {
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 }
 
-
-function showToast() {
-  toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("hidden"), 3000);
+function showToast(message, isError = false) {
+  DOM.toast.textContent = message;
+  DOM.toast.style.backgroundColor = isError ? "rgba(255,0,0,0.7)" : "rgba(0,0,0,0.7)";
+  DOM.toast.classList.remove("hidden");
+  setTimeout(() => {
+    DOM.toast.classList.add("hidden");
+    DOM.toast.style.backgroundColor = "";
+  }, 3000);
 }
 
-function toggleLogDisplay() {
-  logDisplay.classList.toggle("hidden");
+function setupEventListeners() {
+  DOM.toggleBtn.addEventListener("click", toggleAnalysis);
+  window.addEventListener("resize", adjustCanvasSize);
 }
 
-toggleBtn.addEventListener("click", toggleAnalysis);
-exportBtn.addEventListener("click", exportCSV);
-toggleLogBtn.addEventListener("click", toggleLogDisplay);
-window.addEventListener("load", initialize);
+window.addEventListener("load", initializeApp);
