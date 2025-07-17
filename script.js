@@ -185,7 +185,10 @@ async function detectFrame() {
 
 function updateLogDisplay() {
   DOM.logBody.innerHTML = "";
-  if (recordedData.length === 0) {
+
+  const recentLogs = recordedData.slice(-5).reverse(); // 最新5件のみ表示
+
+  if (recentLogs.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
     cell.colSpan = 2;
@@ -197,12 +200,13 @@ function updateLogDisplay() {
     DOM.logBody.appendChild(row);
     return;
   }
-  for (let i = recordedData.length - 1; i >= 0; i--) {
-    const log = recordedData[i];
+
+  for (const log of recentLogs) {
     const row = document.createElement("tr");
     row.innerHTML = `<td>${log.timestamp}</td><td>${log.count}</td>`;
     DOM.logBody.appendChild(row);
   }
+
   DOM.logBody.scrollTop = 0;
 }
 
@@ -211,33 +215,32 @@ async function exportCSV(dataToExport, sessionStartTime) {
     showToast("出力するデータがありません。", true);
     return;
   }
+
   const header = "日時,人数\n";
   const rows = dataToExport.map(row => `"${row.timestamp}",${row.count}`);
   const csvContent = header + rows.join("\n");
   const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
 
-  const now = sessionStartTime;
-  const formattedDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
-  const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
-  const fileName = `${formattedDate}_${formattedTime}_people_counter.csv`;
-
-  link.setAttribute("download", fileName);
-  link.href = url;
-  document.body.appendChild(link);
-
-  try {
+  // スマホ対応: Safariや一部のブラウザ用に window.open()
+  if (navigator.userAgent.match(/iPhone|iPad|Android/i)) {
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+    showToast("CSVを新しいタブで開きました。保存してください。");
+  } else {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const now = sessionStartTime;
+    const fileName = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}${String(now.getSeconds()).padStart(2,'0')}_people_counter.csv`;
+    link.href = url;
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
     link.click();
-    showToast(`CSVファイル「${fileName}」を出力しました。`);
-  } catch (error) {
-    showToast("CSVファイルのダウンロードに失敗しました。", true);
-    console.error("CSV download failed:", error);
-  } finally {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    showToast(`CSVファイル「${fileName}」を出力しました。`);
   }
 }
+
 
 function showToast(message, isError = false) {
   DOM.toast.textContent = message;
