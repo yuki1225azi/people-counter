@@ -219,26 +219,39 @@ async function exportCSV(dataToExport, sessionStartTime) {
   const header = "日時,人数\n";
   const rows = dataToExport.map(row => `"${row.timestamp}",${row.count}`);
   const csvContent = header + rows.join("\n");
-
   const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
 
+  // ファイル名の作成（例: 20250717_203045_people_counter.csv）
   const now = sessionStartTime;
-  const formattedDate = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+  const formattedDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
   const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
   const fileName = `${formattedDate}_${formattedTime}_people_counter.csv`;
 
-  link.href = url;
-  link.download = fileName;
-  link.style.display = "none"; // ユーザーに見せない
-  document.body.appendChild(link);
-  link.click(); // 自動クリックで即ダウンロード
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  showToast(`CSVファイル「${fileName}」を出力しました。`);
+  if (isMobile) {
+    // モバイル: 新しいタブで表示して保存させる
+    const win = window.open(url, '_blank');
+    if (!win) {
+      showToast("ポップアップがブロックされました。設定を確認してください。", true);
+    } else {
+      showToast(`CSVファイルが別タブで開きました。共有や保存から保存してください。`);
+    }
+  } else {
+    // PC: 自動ダウンロード
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`CSVファイル「${fileName}」を出力しました。`);
+  }
+
+  URL.revokeObjectURL(url);
 }
+
 
 
 
