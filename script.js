@@ -14,7 +14,6 @@ const DOM = {
   videoContainer: document.getElementById("video-container")
 };
 
-// 状態管理
 let model = null;
 let isAnalyzing = false;
 let animationFrameId = null;
@@ -23,7 +22,6 @@ let lastLogTime = 0;
 let autoSaveIntervalId = null;
 let analysisStartTime = null;
 
-// 初期化
 async function initializeApp() {
   try {
     DOM.loadingIndicator.classList.remove("hidden");
@@ -33,7 +31,6 @@ async function initializeApp() {
 
     await tf.ready();
 
-    // 擬似進捗バー
     let progress = 0;
     const progressInterval = setInterval(() => {
       progress += 5;
@@ -46,7 +43,6 @@ async function initializeApp() {
     }, 100);
 
     model = await cocoSsd.load();
-
     clearInterval(progressInterval);
     DOM.loadingPercentage.textContent = "100%";
     DOM.loadingProgressBar.value = 100;
@@ -185,27 +181,14 @@ async function detectFrame() {
 
 function updateLogDisplay() {
   DOM.logBody.innerHTML = "";
+  const maxLogs = 5;
+  const logs = recordedData.slice(-maxLogs).reverse();
 
-  const recentLogs = recordedData.slice(-5).reverse(); // 最新5件のみ表示
-
-  if (recentLogs.length === 0) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.colSpan = 2;
-    cell.textContent = "ログはありません";
-    cell.style.textAlign = "center";
-    cell.style.color = "#888";
-    cell.style.padding = "10px";
-    row.appendChild(cell);
-    DOM.logBody.appendChild(row);
-    return;
-  }
-
-  for (const log of recentLogs) {
+  logs.forEach((log, index) => {
     const row = document.createElement("tr");
     row.innerHTML = `<td>${log.timestamp}</td><td>${log.count}</td>`;
     DOM.logBody.appendChild(row);
-  }
+  });
 
   DOM.logBody.scrollTop = 0;
 }
@@ -222,39 +205,22 @@ async function exportCSV(dataToExport, sessionStartTime) {
   const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
-  // ファイル名の作成（例: 20250717_203045_people_counter.csv）
+  const link = document.createElement("a");
   const now = sessionStartTime;
   const formattedDate = `${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
   const formattedTime = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
   const fileName = `${formattedDate}_${formattedTime}_people_counter.csv`;
 
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    // モバイル: 新しいタブで表示して保存させる
-    const win = window.open(url, '_blank');
-    if (!win) {
-      showToast("ポップアップがブロックされました。設定を確認してください。", true);
-    } else {
-      showToast(`CSVファイルが別タブで開きました。共有や保存から保存してください。`);
-    }
-  } else {
-    // PC: 自動ダウンロード
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast(`CSVファイル「${fileName}」を出力しました。`);
-  }
-
+  link.setAttribute("download", fileName);
+  link.href = url;
+  link.style.display = "none";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
   URL.revokeObjectURL(url);
+
+  showToast(`CSVファイル「${fileName}」を出力しました。`);
 }
-
-
-
-
 
 function showToast(message, isError = false) {
   DOM.toast.textContent = message;
