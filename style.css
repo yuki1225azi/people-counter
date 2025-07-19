@@ -12,7 +12,7 @@
 body { /* body要素全体のスタイルを指定 */
   margin: 0; /* body要素の外側の余白をなくす */
   font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Webページ全体のフォントを指定 */
-  font-size: 16px; /* 基本の文字サイズを指定 */
+  font-size: 12px; /* 基本の文字サイズを12pxに設定 */
   background-color: #ffffff; /* 背景色を白に設定 */
   color: var(--font-color); /* 基本の文字色を変数で指定 */
   display: flex; /* Flexboxレイアウトを有効にする */
@@ -115,8 +115,8 @@ body { /* body要素全体のスタイルを指定 */
 #person-count { /* 人数の数字部分のスタイルを指定 */
   font-size: 2em; /* 文字サイズを親要素（pタグ）の2倍にする */
   line-height: 1; /* 行の高さを文字サイズと合わせる */
-  position: relative; /* ★追加：位置の微調整を可能にする */
-  top: -0.1em; /* ★追加：本来の位置から少し上（-0.1em）に移動させる */
+  position: relative; /* 位置の微調整を可能にする */
+  top: -0.1em; /* 本来の位置から少し上（-0.1em）に移動させる */
 } /* #person-countの終了 */
 
 .btn { /* ボタン共通のスタイルを指定 */
