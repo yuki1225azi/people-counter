@@ -22,6 +22,8 @@ let lastLogTime = 0;
 let autoSaveIntervalId = null;
 let analysisStartTime = null;
 
+const MAX_LOGS_IN_DISPLAY = 100;
+
 async function initializeApp() {
   try {
     DOM.loadingIndicator.classList.remove("hidden");
@@ -111,6 +113,7 @@ function startAnalysis() {
 
   recordedData = [];
   analysisStartTime = new Date();
+  DOM.logBody.innerHTML = "";
   startAutoSaveInterval();
   detectFrame();
 }
@@ -180,17 +183,17 @@ async function detectFrame() {
 }
 
 function updateLogDisplay() {
-  DOM.logBody.innerHTML = "";
-  const maxLogs = 5;
-  const logs = recordedData.slice(-maxLogs).reverse();
+  const latestLog = recordedData[recordedData.length - 1];
+  if (!latestLog) return;
 
-  logs.forEach((log, index) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${log.timestamp}</td><td>${log.count}</td>`;
-    DOM.logBody.appendChild(row);
-  });
+  const row = document.createElement("tr");
+  row.innerHTML = `<td>${latestLog.timestamp}</td><td>${latestLog.count}</td>`;
 
-  DOM.logBody.scrollTop = 0;
+  DOM.logBody.prepend(row);
+
+  if (DOM.logBody.children.length > MAX_LOGS_IN_DISPLAY) {
+    DOM.logBody.lastChild.remove();
+  }
 }
 
 async function exportCSV(dataToExport, sessionStartTime) {
