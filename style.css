@@ -12,7 +12,7 @@
 body { /* body要素全体のスタイルを指定 */
   margin: 0; /* body要素の外側の余白をなくす */
   font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Webページ全体のフォントを指定 */
-  font-size: 12px; /* 基本の文字サイズを12pxに設定 */
+  font-size: 16px; /* 基本の文字サイズを16pxに設定 */
   background-color: #ffffff; /* 背景色を白に設定 */
   color: var(--font-color); /* 基本の文字色を変数で指定 */
   display: flex; /* Flexboxレイアウトを有効にする */
@@ -28,14 +28,14 @@ body { /* body要素全体のスタイルを指定 */
   box-sizing: border-box; /* paddingとborderを幅と高さに含める */
   display: flex; /* Flexboxレイアウトを有効にする */
   flex-direction: column; /* Flexboxの子要素を縦方向に並べる */
-  gap: 16px; /* Flexboxの子要素間の間隔を16pxに設定 */
+  gap: 8px; /* Flexboxの子要素間の間隔を8pxに設定 */
   min-height: 100%; /* 最小の高さを親要素の100%にする */
   overflow-y: auto; /* Y軸方向（縦）にはみ出した場合にスクロールバーを表示 */
 } /* #containerの終了 */
 
 #app-title { /* アプリケーションタイトルのスタイルを指定 */
   text-align: center; /* テキストを中央揃えにする */
-  font-size: 1.3em; /* 文字サイズを基本の1.3倍にする */
+  font-size: 1em; /* 文字サイズを基本の1倍にする */
   font-weight: bold; /* 文字を太字にする */
   color: #2c3e50; /* 文字色を指定 */
 } /* #app-titleの終了 */
@@ -51,7 +51,7 @@ body { /* body要素全体のスタイルを指定 */
   align-items: center; /* Flexboxの子要素を垂直方向の中央に配置 */
   justify-content: center; /* Flexboxの子要素を水平方向の中央に配置 */
   gap: 10px; /* Flexboxの子要素間の間隔を10pxに設定 */
-  font-size: 1.1em; /* 文字サイズを基本の1.1倍にする */
+  font-size: 1em; /* 文字サイズを基本の1倍にする */
   font-weight: bold; /* 太字 */
   color: #0056b3; /* 文字色 */
 } /* #loading-modelの終了 */
@@ -102,7 +102,7 @@ body { /* body要素全体のスタイルを指定 */
 } /* #count-display-areaの終了 */
 
 #count-display-area p { /* 人数表示エリア内のpタグのスタイル */
-  font-size: 1.3em; /* 文字サイズを基本の1.3倍にする */
+  font-size: 1em; /* 文字サイズを基本の1倍にする */
   font-weight: bold; /* 文字を太字にする */
   color: #2c3e50; /* 文字色を指定 */
   margin: 0; /* 外側の余白をなくす */
@@ -113,7 +113,7 @@ body { /* body要素全体のスタイルを指定 */
 } /* #count-display-area pの終了 */
 
 #person-count { /* 人数の数字部分のスタイルを指定 */
-  font-size: 2em; /* 文字サイズを親要素（pタグ）の2倍にする */
+  font-size: 1.5em; /* 文字サイズを親要素（pタグ）の1.5倍にする */
   line-height: 1; /* 行の高さを文字サイズと合わせる */
   position: relative; /* 位置の微調整を可能にする */
   top: -0.1em; /* 本来の位置から少し上（-0.1em）に移動させる */
@@ -123,8 +123,8 @@ body { /* body要素全体のスタイルを指定 */
   flex: 0 0 auto; /* Flexアイテムのサイズを自動調整しない */
   white-space: nowrap; /* テキストを折り返さない */
   text-align: center; /* テキストを中央揃えにする */
-  padding: 10px 18px; /* 内側の余白を上下10px、左右18pxに設定 */
-  font-size: 1.3em; /* 文字サイズを「現在の人数」のテキストと合わせる */
+  padding: 5px 10px; /* 内側の余白を上下5px、左右10pxに設定 */
+  font-size: 1em; /* 文字サイズを「現在の人数」のテキストと合わせる */
   font-weight: bold; /* 文字を太字にする */
   color: white; /* 文字色を白にする */
   border: none; /* 枠線をなくす */
