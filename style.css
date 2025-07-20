@@ -12,7 +12,7 @@
 body { /* body要素全体のスタイルを指定 */
   margin: 0; /* body要素の外側の余白をなくす */
   font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; /* Webページ全体のフォントを指定 */
-  font-size: 16px; /* 基本の文字サイズを16pxに設定 */
+  font-size: 14px; /* 基本の文字サイズを14pxに設定 */
   background-color: #ffffff; /* 背景色を白に設定 */
   color: var(--font-color); /* 基本の文字色を変数で指定 */
   display: flex; /* Flexboxレイアウトを有効にする */
